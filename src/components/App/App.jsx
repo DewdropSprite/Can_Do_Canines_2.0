@@ -32,6 +32,7 @@ import UserProfileEdit from "../UserProfileEdit/UserProfileEdit";
 import VolunteerSitterForm from "../VolunteerSitterForm/VolunteerSitterForm";
 import AllProfiles from "../AllProfiles/AllProfiles";
 import PhotoUpload from "../PhotoUpload/PhotoUpload";
+import AddDogFormInfo from "../AddDogForm/AddDogFormInfo";
 
 import "./App.css";
 function App() {
@@ -106,6 +107,9 @@ function App() {
               </ProtectedRoute>
               <ProtectedRoute exact path="/editdogprofile/:dogId">
                 <EditDogProfile />
+              </ProtectedRoute>
+              <ProtectedRoute exact path="/adddogforminfo">
+                <AddDogFormInfo/>
               </ProtectedRoute>
 
 

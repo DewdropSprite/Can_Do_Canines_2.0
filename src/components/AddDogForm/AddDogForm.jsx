@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Container, TextField, Button, Typography, Box, AppBar, Toolbar, IconButton, Stepper, Step, StepLabel, Paper } from '@mui/material';
+import { Container, TextField, Button, Typography, Box, AppBar, Toolbar, IconButton, Stepper, Step, StepLabel, Paper, FormControl } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min';
 import { useDispatch } from 'react-redux';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import FormControl from '@mui/material/FormControl';
+// import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
 import Checkbox from '@mui/material/Checkbox';
 import FormGroup from '@mui/material/FormGroup';
@@ -26,6 +26,8 @@ const AddDogForm = () => {
     age: '',
     breed: '',
     spayed_neutered: '',
+    // dog_location: '',
+
     //food info
     food_type: 5,
     food_amount: '',
@@ -201,7 +203,8 @@ const AddDogForm = () => {
               <TextField
                 fullWidth
                 margin="normal"
-                required id="dog_name"
+                required ={true}
+                id="dog_name"
                 name="dog_name"
                 label="Dog Name"
                 value={formValues.dog_name}
@@ -212,6 +215,7 @@ const AddDogForm = () => {
               <TextField
                 fullWidth
                 margin="normal"
+                required={true}
                 id="age"
                 name="age"
                 label="Dog Age"
@@ -227,6 +231,7 @@ const AddDogForm = () => {
               <RadioGroup
                 aria-labelledby="breed-label"
                 value={formValues.breed}
+                required={true}
                 onChange={handleChangeRadioBtn}
                 name="breed"
               >
@@ -305,6 +310,7 @@ const AddDogForm = () => {
             />
 
             <TextField
+              required
               fullWidth
               margin="normal"
               id="eating_times"
