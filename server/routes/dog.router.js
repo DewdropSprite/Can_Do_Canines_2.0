@@ -2,7 +2,7 @@ const express = require("express");
 const pool = require("../modules/pool");
 const router = express.Router();
 const multer = require("multer");
-const path = require('path');
+
 
 //! clean up console logs and comments before client handoff
 /**
@@ -366,11 +366,9 @@ router.put("/:id", async (req, res) => {
 
 // Set up multer storage
 const storage = multer.diskStorage({
-  destination: path.resolve(__dirname,'../..', 'public/Images/'),
+  destination: (__dirname,'../..', 'public/Images/'),
   filename: function (req, file, cb) {
-    // Define how files should be named
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + file.originalname);
+    cb(null, file.fieldname + '-' + Math.round(Math.random() * 1000) + '-' + file.originalname);
   }
 });
 
@@ -378,7 +376,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 
-router.post("/photo/:id", upload.single('photo'), async (req,res) => {
+router.post("/photo/:id", upload.single('photo'), async (req,result) => {
   console.log("uploaded file:", req.file)
 
 if(req.isAuthenticated()){
@@ -392,10 +390,8 @@ if(req.isAuthenticated()){
     connection = await pool.connect();
 
     const dogId = req.params.id;
-    // const photoPath = `/public/Images/`; // Adjust path as necessary
 
-
-    console.log("req.body", JSON.stringify(req.body));
+    console.log("req.body", req.body);
     
     console.log("Dog ID:", dogId);
 
@@ -425,6 +421,37 @@ if(req.isAuthenticated()){
   }
 }else{res.sendStatus(403);
 }})
+
+router.put("/photo/:id", upload.single('photo'), async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.sendStatus(403);
+  }
+
+  const dogId = req.params.dogId;
+  const newPhotoUrl = req.file ? `/Images/${req.file.filename}` : null;
+
+  try {
+    const connection = await pool.connect();
+    await connection.query('BEGIN');
+
+    // Check for an existing photo and delete the old file
+    const existingPhotoRes = await connection.query(`SELECT "photo" FROM "photo" WHERE "dog_id" = $1`, [dogId]);
+    if (existingPhotoRes.rows.length > 0) {
+      const oldPhotoPath = existingPhotoRes.rows[0].photo;
+      fs.unlinkSync(path.join(__dirname, '../..', 'public', oldPhotoPath));
+    }
+
+    // Update the database with the new photo URL
+    await connection.query(`UPDATE "photo" SET "photo" = $1 WHERE "dog_id" = $2`, [newPhotoUrl, dogId]);
+
+    await connection.query('COMMIT');
+    res.send("Photo updated successfully.");
+  } catch (error) {
+    console.error("Error updating photo:", error);
+    res.sendStatus(500);
+  }
+});
+
 
 
 module.exports = router;

@@ -31,7 +31,6 @@ function PhotoUpload() {
     event.preventDefault();
 
     const formData = new FormData();
-    // Object.entries(newPhoto).forEach(([key, value]) => {
       formData.append('photo', newPhoto.photo_url);
     
 
@@ -41,8 +40,6 @@ function PhotoUpload() {
           "Content-Type": "multipart/form-data",
         },
       });
-      // dispatch({ type: "ADD_PHOTO", payload: newPhoto });
-      // setShouldRedirect(true);
     } catch (error) {
       console.error("Error adding photo:", error);
     }
@@ -54,7 +51,7 @@ function PhotoUpload() {
 
   return (
     <div>
-      <form onSubmit={addNewPhoto}>
+      <form action={`/photo/${dogId}`} method="post" encType="multipart/form-data">
       <p>Add Profile Picture</p>
         <input type="file" name= "photo" onChange={handleFileChange} />
         <Button onClick={addNewPhoto}>Upload Photo</Button>
