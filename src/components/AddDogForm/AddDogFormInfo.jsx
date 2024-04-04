@@ -10,6 +10,7 @@ const AddDogFormInfo = () => {
         //dog basic information
         dog_name: '',
         age: '',
+        gender: '',
         breed: '',
         spayed_neutered: '',
         dog_location: ''
