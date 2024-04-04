@@ -114,8 +114,11 @@ const HomePage = () => {
                   }}
                 >
                   <img
-                    src={dog.photo}
-                    alt="Dog"
+                    src={dog.photo ? dog.photo
+                      : "../../Public/Images/dogoutline.jpeg"}
+                      alt={`Profile of ${
+                        dog.dog_name ? dog.dog_name : "dog"
+                      }`}
                     style={{
                       height: "100%",
                       width: "auto",

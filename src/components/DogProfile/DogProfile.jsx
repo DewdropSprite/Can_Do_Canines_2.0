@@ -3,6 +3,8 @@ import axios from "axios";
 import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useHistory } from "react-router-dom";
+import PhotoUpload from "../PhotoUpload/PhotoUpload";
+import Modal from "@mui/material/Modal";
 import {
   Button,
   Typography,
@@ -23,9 +25,24 @@ function DogProfile() {
   let dispatch = useDispatch();
 
   const dogProfile = useSelector((state) => state.fetchOneDogProfile);
-  const userId = useSelector((state) => state.user.id)
+  const userId = useSelector((state) => state.user.id);
 
   const { dogId } = useParams();
+
+  const [open, setOpen] = React.useState(false);
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
+  const modalStyle = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: 400,
+    bgcolor: "background.paper",
+    boxShadow: 24,
+    p: 4,
+  };
 
   useEffect(() => {
     if (dogId) {
@@ -91,7 +108,7 @@ function DogProfile() {
       <IconButton onClick={onGoBack} sx={{ color: "red", fontSize: "2.5rem" }}>
         <ArrowBackIcon sx={{ fontSize: "inherit" }} />
       </IconButton>
-      
+
       <Typography
         gutterBottom
         variant="h2"
@@ -100,24 +117,40 @@ function DogProfile() {
       >
         {dogProfile?.dog_name}
       </Typography>
-<Box sx={{textAlign: 'center'}}>
-      {dogProfile.photo && (
-        <img src={dogProfile.photo} alt={`Profile of ${dogProfile.dog_name}`} />)}
-</Box>
+      <Box sx={{ textAlign: "center" }}>
+        <img
+          src={
+            dogProfile.photo
+              ? dogProfile.photo
+              : "../../Public/Images/dogoutline.jpeg"
+          }
+          alt={`Profile of ${
+            dogProfile.dog_name ? dogProfile.dog_name : "dog"
+          }`}
+          style={{ maxWidth: "50%", maxHeight: "400px" }}
+        />
+      </Box>
 
-      
       <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
-  {dogProfile?.user_id === userId && (
-    
-    <Button
-      variant="contained"
-      color="secondary"
-      onClick={() => history.push(`/profilephoto/${dogId}`)}
-    >
-      Add Profile Picture
-    </Button>
-  )}
-</Box>
+        {dogProfile?.user_id === userId && (
+          <Button variant="contained" color="secondary" onClick={handleOpen}>
+            Add Profile Picture
+          </Button>
+        )}
+      </Box>
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="modal-title"
+        aria-describedby="modal-description"
+      >
+        <Box sx={modalStyle}>
+          <Typography id="modal-title" variant="h6" component="h2">
+            Upload Profile Picture
+          </Typography>
+          <PhotoUpload />
+        </Box>
+      </Modal>
 
       <Box
         sx={{
@@ -413,41 +446,42 @@ function DogProfile() {
       </Box>
 
       <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
-       {dogProfile?.user_id === userId && (
-        <>
-        <Button variant="outlined" color="error" onClick={handleDelete}>
-          Delete Profile
-        </Button>
-        <Button variant="outlined" onClick={handleEdit} sx={{ mx: 1 }}>
-          Edit Profile
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleRequestCareDates}
-        >
-          Request Care Dates
-        </Button>
-        </>
-       )}
-
+        {dogProfile?.user_id === userId && (
+          <>
+            <Button variant="outlined" color="error" onClick={handleDelete}>
+              Delete Profile
+            </Button>
+            <Button variant="outlined" onClick={handleEdit} sx={{ mx: 1 }}>
+              Edit Profile
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleRequestCareDates}
+            >
+              Request Care Dates
+            </Button>
+          </>
+        )}
       </Box>
 
       <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
-  {dogProfile?.user_id !== userId && (
-    <Button
-      variant="contained"
-      color="primary"
-      onClick={() => {
-        console.log("This button is visible to users other than the owner.");
+        {dogProfile?.user_id !== userId && (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              console.log(
+                "This button is visible to users other than the owner."
+              );
 
-        history.push(`/volunteerSitterForm/${dogId}`)
-      }}
-    >
-     Volunteer
-    </Button>
-  )}
-</Box>
+              history.push(`/volunteerSitterForm/${dogId}`);
+            }}
+          >
+            Volunteer
+          </Button>
+        )}
+      </Box>
     </Container>
   );
 }

@@ -18,30 +18,37 @@ import axios from 'axios';
 function PhotoUpload() {
   const { dogId } = useParams();
 
-  let [newPhoto, setPhoto] = useState({
-    photo_url: null,
-  });
+  let [newPhoto, setPhoto] = useState(null);
+
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState('');
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
-    setPhoto({ ...newPhoto, photo_url: file });
+    setPhoto(file);
   };
 
-  const addNewPhoto = async (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setUploading(true);
 
     const formData = new FormData();
-      formData.append('photo', newPhoto.photo_url);
+      formData.append('photo', newPhoto);
     
 
     try {
-      await axios.post(`/api/dog/photo/${dogId}`, formData, {
+      const response = await axios.post(`/api/dog/photo/${dogId}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
+      setMessage('Profile photo uploaded successfully!')
+      console.log("response.data:", response.data)
     } catch (error) {
       console.error("Error adding photo:", error);
+      setMessage('Profile photo failed to upload')
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -50,13 +57,18 @@ function PhotoUpload() {
 
 
   return (
-    <div>
-      <form action={`/photo/${dogId}`} method="post" encType="multipart/form-data">
-      <p>Add Profile Picture</p>
-        <input type="file" name= "photo" onChange={handleFileChange} />
-        <Button onClick={addNewPhoto}>Upload Photo</Button>
+    <Container>
+      <Typography variant='h6'>Add a Profile Picture</Typography>
+
+    
+      <form onSubmit={handleSubmit} encType="multipart/form-data">
+      <TextField type="file" name="photo" onChange={handleFileChange} disabled={uploading} />
+        <Button type="submit" disabled={uploading}>Upload Photo</Button>
       </form>
-    </div>
+      {uploading && <p>Uploading...</p>}
+      {message && <p>{message}</p>}
+      </Container>
+
   );
 }
 

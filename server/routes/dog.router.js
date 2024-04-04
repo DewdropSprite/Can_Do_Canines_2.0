@@ -2,7 +2,8 @@ const express = require("express");
 const pool = require("../modules/pool");
 const router = express.Router();
 const multer = require("multer");
-
+const fs = require("fs");
+const path = require('path');
 
 //! clean up console logs and comments before client handoff
 /**
@@ -13,13 +14,11 @@ router.get("/", async (req, res) => {
   console.log("is authenticated?", req.isAuthenticated());
   console.log("user", req.user);
 
-
   if (req.isAuthenticated()) {
     let connection;
     try {
       connection = await pool.connect();
       const userId = req.user.id;
-
 
       const query = `
       SELECT
@@ -77,7 +76,6 @@ router.get("/", async (req, res) => {
       const dogsResult = result.rows;
       console.log(dogsResult);
       res.json(dogsResult);
-
     } catch (error) {
       console.error("error fetching dogs", error);
       res.sendStatus(500);
@@ -94,7 +92,7 @@ router.get("/", async (req, res) => {
 /**
  * GET route to retrieve a single dog from "dogs" table from the DB
  * The dog's ID is passed as a URL parameter named 'id'
-*/
+ */
 router.get("/:id", async (req, res) => {
   console.log("/dog/:id GET route");
   console.log("is authenticated?", req.isAuthenticated());
@@ -106,7 +104,7 @@ router.get("/:id", async (req, res) => {
       connection = await pool.connect();
       const dogId = req.params.id;
 
-      console.log("dogId server", dogId)
+      console.log("dogId server", dogId);
       const query = `SELECT
         "dogs"."user_id",
         
@@ -176,12 +174,12 @@ router.get("/:id", async (req, res) => {
       const result = await connection.query(query, [dogId]);
       const dog = result.rows[0];
 
-      console.log("dog result.rows", dog)
+      console.log("dog result.rows", dog);
 
       if (dog) {
         res.json(dog);
       } else {
-        res.status(404).send('Dog not found');
+        res.status(404).send("Dog not found");
       }
     } catch (error) {
       console.error("Error fetching dog", error);
@@ -209,7 +207,7 @@ router.post("/", (req, res) => {
     const user = req.user.id;
 
     const dogData = [
-      req.user.id, 
+      req.user.id,
       req.body.dog_name,
       req.body.age,
       req.body.breed,
@@ -336,8 +334,9 @@ router.put("/:id", async (req, res) => {
 
       //construct the SQL Query Text using setClause and values.length +1 = dog id
       //RETURNING is just asking PostgreSQL to return the updated row of data
-      const queryText = `UPDATE "dogs" SET ${setClause} WHERE "id" = $${values.length + 1
-        } RETURNING *;`;
+      const queryText = `UPDATE "dogs" SET ${setClause} WHERE "id" = $${
+        values.length + 1
+      } RETURNING *;`;
 
       // Execute the update query ...values = placeholder values ($1, $2, $3, etc.)
       const result = await connection.query(queryText, [...values, dogId]);
@@ -362,93 +361,89 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-
-
 // Set up multer storage
 const storage = multer.diskStorage({
-  destination: (__dirname,'../..', 'public/Images/'),
+  destination: (__dirname, "../..", "public/Images/"),
   filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Math.round(Math.random() * 1000) + '-' + file.originalname);
-  }
+    cb(
+      null,
+      file.fieldname +
+        "-" +
+        Math.round(Math.random() * 999) +
+        "-" +
+        file.originalname
+    );
+  },
 });
 
 // Configure multer instance
 const upload = multer({ storage: storage });
 
+router.post("/photo/:id", upload.single("photo"), async (req, res) => {
+  console.log("uploaded file:", req.file);
 
-router.post("/photo/:id", upload.single('photo'), async (req,result) => {
-  console.log("uploaded file:", req.file)
-
-if(req.isAuthenticated()){
-  let connection;
-
-  try{
-
-    const photoUrl = req.file ? `/Images/${req.file.filename}` : null;
-
-    console.log("photoUrl", photoUrl);
-    connection = await pool.connect();
-
-    const dogId = req.params.id;
-
-    console.log("req.body", req.body);
-    
-    console.log("Dog ID:", dogId);
+  if (req.isAuthenticated()) {
+    let connection;
 
 
+      const dogId = req.params.id;
+      const photoUrl = req.file ? `/Images/${req.file.filename}` : null;
+      console.log("photoUrl", photoUrl);
 
-    const queryText = `
+      if(!photoUrl){
+        return res.status(400).send({ message: "No photo uploaded" });
+      }
+      
+    try {
+      connection = await pool.connect();
+
+      const existingPhotoQuery = `SELECT "photo" FROM "photo" WHERE "dog_id" = $1`;
+      const { rows } = await connection.query(existingPhotoQuery, [dogId]);
+      if (rows.length > 0) {
+        const oldPhotoPath = rows[0].photo;
+        const fullPath = path.join(__dirname, '../..', 'public', oldPhotoPath);
+  
+        // Delete the old photo file from the filesystem
+        try {
+          fs.unlinkSync(fullPath);
+          console.log("Successfully deleted old photo:", fullPath);
+        } catch (err) {
+          // Handle errors (e.g., file might not exist)
+          console.error("Failed to delete old photo:", err);
+        }
+      }
+  
+
+      console.log("req.body", req.body);
+
+      console.log("Dog ID:", dogId);
+
+      const queryText = `
     INSERT INTO "photo"("dog_id", "photo")
     VALUES ($1, $2)
+    ON CONFLICT ("dog_id")
+    DO UPDATE SET "photo" = EXCLUDED.photo
     RETURNING "id";
   `;
-    
-  const result = await connection.query(queryText, [dogId, photoUrl]);
 
+      const result = await connection.query(queryText, [dogId, photoUrl]);
 
-    console.log("result", result)
+      console.log("result", result);
 
-    const photoResults = result.rows;
-    res.json(photoResults)
-  } catch(error){
-    console.error("error adding photo")
-    console.error(error.stack)
-    res.sendStatus(500)
-  }finally {
-    if(connection){
-      connection.release();
+      const photoResults = result.rows;
+      res.json(photoResults);
+
+    } catch (error) {
+      console.error("error adding photo");
+      console.error(error.stack);
+      res.sendStatus(500);
+    } finally {
+      if (connection) {
+        connection.release();
+      }
     }
-  }
-}else{res.sendStatus(403);
-}})
-
-router.put("/photo/:id", upload.single('photo'), async (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.sendStatus(403);
-  }
-
-  const dogId = req.params.dogId;
-  const newPhotoUrl = req.file ? `/Images/${req.file.filename}` : null;
-
-  try {
-    const connection = await pool.connect();
-    await connection.query('BEGIN');
-
-    // Check for an existing photo and delete the old file
-    const existingPhotoRes = await connection.query(`SELECT "photo" FROM "photo" WHERE "dog_id" = $1`, [dogId]);
-    if (existingPhotoRes.rows.length > 0) {
-      const oldPhotoPath = existingPhotoRes.rows[0].photo;
-      fs.unlinkSync(path.join(__dirname, '../..', 'public', oldPhotoPath));
-    }
-
-    // Update the database with the new photo URL
-    await connection.query(`UPDATE "photo" SET "photo" = $1 WHERE "dog_id" = $2`, [newPhotoUrl, dogId]);
-
-    await connection.query('COMMIT');
-    res.send("Photo updated successfully.");
-  } catch (error) {
-    console.error("Error updating photo:", error);
-    res.sendStatus(500);
+  } else {
+    res.sendStatus(403);
   }
 });
 
