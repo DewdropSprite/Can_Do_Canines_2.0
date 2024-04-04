@@ -16,6 +16,7 @@ import {
   Grid,
 } from "@mui/material";
 import PetsIcon from "@mui/icons-material/Pets";
+import CloseIcon from "@mui/icons-material/Close";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import swal from "sweetalert";
@@ -41,7 +42,7 @@ function DogProfile() {
     width: 400,
     bgcolor: "background.paper",
     boxShadow: 24,
-    p: 4,
+    p: 2,
   };
 
   useEffect(() => {
@@ -50,7 +51,6 @@ function DogProfile() {
     }
   }, [dogId, dispatch]);
 
-  // // Confirm deletion and call onDelete
   const handleDelete = async (event) => {
     event.preventDefault();
     try {
@@ -133,22 +133,26 @@ function DogProfile() {
 
       <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
         {dogProfile?.user_id === userId && (
-          <Button variant="contained" color="secondary" onClick={handleOpen}>
+          <Button variant="contained" color="primary" onClick={handleOpen}>
             Add Profile Picture
           </Button>
         )}
       </Box>
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="modal-title"
-        aria-describedby="modal-description"
-      >
+      <Modal open={open} onClose={handleClose}>
         <Box sx={modalStyle}>
-          <Typography id="modal-title" variant="h6" component="h2">
-            Upload Profile Picture
-          </Typography>
-          <PhotoUpload />
+          <IconButton
+            aria-label="close"
+            onClick={handleClose}
+            sx={{
+              position: "absolute",
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          <PhotoUpload onClose={handleClose} />
         </Box>
       </Modal>
 

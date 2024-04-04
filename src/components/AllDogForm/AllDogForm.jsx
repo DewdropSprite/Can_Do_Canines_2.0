@@ -91,10 +91,14 @@ const DogCards = () => {
                 <CardActionArea
                   onClick={() => history.push(`/dogprofile/${dog.dog_id}`)}
                 >
-                  <CardMedia
+                  <CardMedia onClick={() => history.push(`/dogprofile/${dog.dog_id}`)}
                     component="img"
-                    image={dog.photo}
-                    alt={dog.dog_name}
+                    src={
+                      dog.photo
+                    ? dog.photo : "../../Public/Images/dogoutline.jpeg"}
+                    alt={`${
+                      dog.dog_name ? dog.dog_name : "dog"
+                    } 's Profile`}
                     sx={{
                       height: 200, 
                       objectFit: 'contain',

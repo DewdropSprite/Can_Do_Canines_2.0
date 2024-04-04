@@ -3,9 +3,9 @@ const pool = require("../modules/pool");
 const router = express.Router();
 const multer = require("multer");
 const fs = require("fs");
-const path = require('path');
+const path = require("path");
 
-//! clean up console logs and comments before client handoff
+
 /**
  * GET route to retrieve the "dog" table from the DB
  */
@@ -295,71 +295,102 @@ router.post("/", (req, res) => {
   }
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/:id", async (req, res) => {
   const dogId = req.params.id;
-  if (req.isAuthenticated()) {
-    const deleteDogQuery = `
-        DELETE FROM "dogs"
-        WHERE "id" = $1;`;
-
-    pool
-      .query(deleteDogQuery, [dogId])
-      .then(() => res.sendStatus(201))
-      .catch((error) => {
-        console.log("Failed to delete dog profile", error);
-        res.sendStatus(500);
-      });
+  if (!req.isAuthenticated()) {
+    return res.status(403).send("Not authenticated");
   }
-});
+  let connection;
 
-router.put("/:id", async (req, res) => {
-  console.log("/dog PUT route");
-  const dogId = req.params.id;
-  const updates = req.body; // All available fields to update ("dogs" table)
+  try {
+    const connection = await pool.connect();
+    await connection.query("BEGIN");
 
-  if (req.isAuthenticated()) {
-    let connection;
-    try {
-      connection = await pool.connect();
+    // Query for the photo path before deletion
+    const photoQuery = `SELECT "photo" FROM "photo" WHERE "dog_id" = $1`;
+    const photoRes = await connection.query(photoQuery, [dogId]);
 
-      //Build the SQL update statement based on the fields the user updates
-      //keys are the db property names  of the fields the user is trying to update
-
-      const setClause = Object.keys(updates)
-        .map((key, index) => `"${key}" = $${index + 1}`) //iterate over the keys(db fields) to create an array of string segments for the SET clause
-        //Each segment maps a field name to a placeholder value ($1, $2`).
-        .join(", "); // this combines the segments above and creates a single string. This forms the SET piece of the queryText
-
-      const values = Object.values(updates); //This takes the SetClause object and creates an array. Corresponds to new data being put in the db
-
-      //construct the SQL Query Text using setClause and values.length +1 = dog id
-      //RETURNING is just asking PostgreSQL to return the updated row of data
-      const queryText = `UPDATE "dogs" SET ${setClause} WHERE "id" = $${
-        values.length + 1
-      } RETURNING *;`;
-
-      // Execute the update query ...values = placeholder values ($1, $2, $3, etc.)
-      const result = await connection.query(queryText, [...values, dogId]);
-
-      if (result.rows.length > 0) {
-        // If the update was successful, return the updated dog profile
-        res.json(result.rows[0]);
-      } else {
-        // If no rows were updated, it means the dog ID was not found
-        res.status(404).send({ message: "Dog not found" });
+    if (photoRes.rows.length > 0) {
+      const photoPath = photoRes.rows[0].photo;
+      const fullPath = path.join(__dirname, "../..", "public", photoPath);
+      // Attempt to delete the file
+      try {
+        fs.unlinkSync(fullPath);
+        console.log("Successfully deleted photo:", fullPath);
+      } catch (err) {
+        console.error("Failed to delete photo", err);
       }
-    } catch (error) {
-      console.error("Error updating dog profile", error);
-      res.sendStatus(500);
-    } finally {
-      if (connection) {
-        connection.release();
-      }
+    } else {
+      console.log("No Photo found for dogId:", dogId);
     }
-  } else {
-    res.sendStatus(403); // Not authenticated
+
+    // Delete the dog profile
+    const deleteDogQuery = `DELETE FROM "dogs" WHERE "id" = $1;`;
+    await connection.query(deleteDogQuery, [dogId]);
+    await connection.query("COMMIT");
+
+    connection.release();
+    res.sendStatus(200);
+  } catch (error) {
+    try {
+      await connection.query("ROLLBACK");
+    } catch (rollbackError) {
+      console.error("Rollback Error:", rollbackError);
+    }
+
+    console.log("Failed to delete dog profile", error);
+    res.sendStatus(500);
   }
 });
+
+// router.put("/:id", async (req, res) => {
+//   console.log("/dog PUT route");
+//   const dogId = req.params.id;
+//   const updates = req.body; // All available fields to update ("dogs" table)
+
+//   if (req.isAuthenticated()) {
+//     let connection;
+//     try {
+//       connection = await pool.connect();
+
+//       //Build the SQL update statement based on the fields the user updates
+//       //keys are the db property names  of the fields the user is trying to update
+
+//       const setClause = Object.keys(updates)
+//         .map((key, index) => `"${key}" = $${index + 1}`) //iterate over the keys(db fields) to create an array of string segments for the SET clause
+//         //Each segment maps a field name to a placeholder value ($1, $2`).
+//         .join(", "); // this combines the segments above and creates a single string. This forms the SET piece of the queryText
+
+//       const values = Object.values(updates); //This takes the SetClause object and creates an array. Corresponds to new data being put in the db
+
+//       //construct the SQL Query Text using setClause and values.length +1 = dog id
+//       //RETURNING is just asking PostgreSQL to return the updated row of data
+//       const queryText = `UPDATE "dogs" SET ${setClause} WHERE "id" = $${
+//         values.length + 1
+//       } RETURNING *;`;
+
+//       // Execute the update query ...values = placeholder values ($1, $2, $3, etc.)
+//       const result = await connection.query(queryText, [...values, dogId]);
+
+//       if (result.rows.length > 0) {
+//         // If the update was successful, return the updated dog profile
+//         res.json(result.rows[0]);
+//       } else {
+//         // If no rows were updated, it means the dog ID was not found
+//         res.status(404).send({ message: "Dog not found" });
+//       }
+//     } catch (error) {
+//       console.error("Error updating dog profile", error);
+//       res.sendStatus(500);
+//     } finally {
+//       if (connection) {
+//         connection.release();
+//       }
+//     }
+//   } else {
+//     res.sendStatus(403); // Not authenticated
+//   }
+// });
 
 // Set up multer storage
 const storage = multer.diskStorage({
@@ -385,15 +416,14 @@ router.post("/photo/:id", upload.single("photo"), async (req, res) => {
   if (req.isAuthenticated()) {
     let connection;
 
+    const dogId = req.params.id;
+    const photoUrl = req.file ? `/Images/${req.file.filename}` : null;
+    console.log("photoUrl", photoUrl);
 
-      const dogId = req.params.id;
-      const photoUrl = req.file ? `/Images/${req.file.filename}` : null;
-      console.log("photoUrl", photoUrl);
+    if (!photoUrl) {
+      return res.status(400).send({ message: "No photo uploaded" });
+    }
 
-      if(!photoUrl){
-        return res.status(400).send({ message: "No photo uploaded" });
-      }
-      
     try {
       connection = await pool.connect();
 
@@ -401,8 +431,8 @@ router.post("/photo/:id", upload.single("photo"), async (req, res) => {
       const { rows } = await connection.query(existingPhotoQuery, [dogId]);
       if (rows.length > 0) {
         const oldPhotoPath = rows[0].photo;
-        const fullPath = path.join(__dirname, '../..', 'public', oldPhotoPath);
-  
+        const fullPath = path.join(__dirname, "../..", "public", oldPhotoPath);
+
         // Delete the old photo file from the filesystem
         try {
           fs.unlinkSync(fullPath);
@@ -412,7 +442,6 @@ router.post("/photo/:id", upload.single("photo"), async (req, res) => {
           console.error("Failed to delete old photo:", err);
         }
       }
-  
 
       console.log("req.body", req.body);
 
@@ -432,7 +461,6 @@ router.post("/photo/:id", upload.single("photo"), async (req, res) => {
 
       const photoResults = result.rows;
       res.json(photoResults);
-
     } catch (error) {
       console.error("error adding photo");
       console.error(error.stack);
@@ -446,7 +474,5 @@ router.post("/photo/:id", upload.single("photo"), async (req, res) => {
     res.sendStatus(403);
   }
 });
-
-
 
 module.exports = router;
