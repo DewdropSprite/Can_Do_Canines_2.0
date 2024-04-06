@@ -5,6 +5,28 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 
+/**
+ * MULTER storage setup
+ */
+const storage = multer.diskStorage({
+  destination: (__dirname, "../..", "public/Images/"),
+  filename: function (req, file, cb) {
+    cb(
+      null,
+      file.fieldname +
+        "-" +
+        Math.round(Math.random() * 999) +
+        "-" +
+        file.originalname
+    );
+  },
+});
+
+/**
+ * MULTER configuration
+ */
+const upload = multer({ storage: storage });
+
 
 /**
  * GET route to retrieve the "dog" table from the DB
@@ -295,6 +317,10 @@ router.post("/", (req, res) => {
   }
 });
 
+/**
+ * DELETE route to delete a dog profile
+ * This route also handles deleting the profile photo from disk storage
+ */
 router.delete("/:id", async (req, res) => {
   const dogId = req.params.id;
   if (!req.isAuthenticated()) {
@@ -313,7 +339,7 @@ router.delete("/:id", async (req, res) => {
     if (photoRes.rows.length > 0) {
       const photoPath = photoRes.rows[0].photo;
       const fullPath = path.join(__dirname, "../..", "public", photoPath);
-      // Attempt to delete the file
+      // Attempt to delete the photo file
       try {
         fs.unlinkSync(fullPath);
         console.log("Successfully deleted photo:", fullPath);
@@ -343,82 +369,16 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// router.put("/:id", async (req, res) => {
-//   console.log("/dog PUT route");
-//   const dogId = req.params.id;
-//   const updates = req.body; // All available fields to update ("dogs" table)
-
-//   if (req.isAuthenticated()) {
-//     let connection;
-//     try {
-//       connection = await pool.connect();
-
-//       //Build the SQL update statement based on the fields the user updates
-//       //keys are the db property names  of the fields the user is trying to update
-
-//       const setClause = Object.keys(updates)
-//         .map((key, index) => `"${key}" = $${index + 1}`) //iterate over the keys(db fields) to create an array of string segments for the SET clause
-//         //Each segment maps a field name to a placeholder value ($1, $2`).
-//         .join(", "); // this combines the segments above and creates a single string. This forms the SET piece of the queryText
-
-//       const values = Object.values(updates); //This takes the SetClause object and creates an array. Corresponds to new data being put in the db
-
-//       //construct the SQL Query Text using setClause and values.length +1 = dog id
-//       //RETURNING is just asking PostgreSQL to return the updated row of data
-//       const queryText = `UPDATE "dogs" SET ${setClause} WHERE "id" = $${
-//         values.length + 1
-//       } RETURNING *;`;
-
-//       // Execute the update query ...values = placeholder values ($1, $2, $3, etc.)
-//       const result = await connection.query(queryText, [...values, dogId]);
-
-//       if (result.rows.length > 0) {
-//         // If the update was successful, return the updated dog profile
-//         res.json(result.rows[0]);
-//       } else {
-//         // If no rows were updated, it means the dog ID was not found
-//         res.status(404).send({ message: "Dog not found" });
-//       }
-//     } catch (error) {
-//       console.error("Error updating dog profile", error);
-//       res.sendStatus(500);
-//     } finally {
-//       if (connection) {
-//         connection.release();
-//       }
-//     }
-//   } else {
-//     res.sendStatus(403); // Not authenticated
-//   }
-// });
-
-// Set up multer storage
-const storage = multer.diskStorage({
-  destination: (__dirname, "../..", "public/Images/"),
-  filename: function (req, file, cb) {
-    cb(
-      null,
-      file.fieldname +
-        "-" +
-        Math.round(Math.random() * 999) +
-        "-" +
-        file.originalname
-    );
-  },
-});
-
-// Configure multer instance
-const upload = multer({ storage: storage });
-
+/**
+ * POST request handles adding a profile picture in the "photo" table. 
+ * It also deletes the old photo from disk storage if a user decides do change the picture.
+ */
 router.post("/photo/:id", upload.single("photo"), async (req, res) => {
-  console.log("uploaded file:", req.file);
-
   if (req.isAuthenticated()) {
     let connection;
 
     const dogId = req.params.id;
     const photoUrl = req.file ? `/Images/${req.file.filename}` : null;
-    console.log("photoUrl", photoUrl);
 
     if (!photoUrl) {
       return res.status(400).send({ message: "No photo uploaded" });
@@ -438,14 +398,9 @@ router.post("/photo/:id", upload.single("photo"), async (req, res) => {
           fs.unlinkSync(fullPath);
           console.log("Successfully deleted old photo:", fullPath);
         } catch (err) {
-          // Handle errors (e.g., file might not exist)
           console.error("Failed to delete old photo:", err);
         }
       }
-
-      console.log("req.body", req.body);
-
-      console.log("Dog ID:", dogId);
 
       const queryText = `
     INSERT INTO "photo"("dog_id", "photo")
@@ -456,8 +411,6 @@ router.post("/photo/:id", upload.single("photo"), async (req, res) => {
   `;
 
       const result = await connection.query(queryText, [dogId, photoUrl]);
-
-      console.log("result", result);
 
       const photoResults = result.rows;
       res.json(photoResults);

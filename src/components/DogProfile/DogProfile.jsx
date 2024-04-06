@@ -479,7 +479,7 @@ function DogProfile() {
                 "This button is visible to users other than the owner."
               );
 
-              history.push(`/volunteerSitterForm/${dogId}`);
+              history.push(`/volunteersitterform/${dogProfile.requestId}/${dogProfile.start_date}/${dogProfile.end_date}`);
             }}
           >
             Volunteer

@@ -18,12 +18,14 @@ import axios from "axios";
 import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { format } from "date-fns";
-import { useHistory } from "react-router-dom";
+import { useParams, useHistory } from "react-router-dom";
 
 const DataGrid = () => {
   const [sittingDogs, setSittingDogs] = useState([]);
   const dispatch = useDispatch();
   const history = useHistory();
+
+
 
   const [toggle, setToggle] = React.useState("left");
 
@@ -100,15 +102,14 @@ const DataGrid = () => {
           </TableHead>
           <TableBody>
             {sittingDogs
-              .filter((dog) => dog.status !== "confirmed")
+              .filter(dog => dog.start_date)
               .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
               .map((dog, index) => (
                 <TableRow
-                  key={dog.name + index}
+                  key={dog.id || index}
                   sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
                 >
                   <TableCell component="th" scope="row">
-                    {/* Replace with actual image */}
                     <img
                     onClick={() => history.push(`/dogprofile/${dog.dog_id}`)}
                       src={
@@ -136,7 +137,7 @@ const DataGrid = () => {
                   <TableCell align="center">
                     <Button
                       variant="outlined"
-                      onClick={() => history.push(`/volunteerSitterForm/${dog.dog_id}/${dog.start_date}/${dog.end_date}`)}
+                      onClick={() => history.push(`/volunteersitterform/${dog.requestId}/${dog.start_date}/${dog.end_date}`)}
                       // this should go to the volunteer sitter form based on dog id
                     >
                       Volunteer

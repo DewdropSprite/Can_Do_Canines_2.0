@@ -11,11 +11,11 @@ function* fetchRequests(action) {
 }
 
 function* confirmRequest(action) {
-  console.log('action.payload', action.payload.volunteer_id)
+  console.log('action.payload', action.payload)
   try {
-    yield call(axios.put, `/api/admin/${action.payload.request_id}`, {
-      status: "confirmed",
-      confirmed_volunteer_id:  action.payload.volunteer_user_id
+    const { status, hostId } = action.payload;
+    yield call(axios.put, `/api/admin/${hostId}`, {
+      status,
     });
     yield put({ type: "FETCH_REQUESTS" });
   } catch (error) {
@@ -25,8 +25,9 @@ function* confirmRequest(action) {
 
 function* denyRequest(action) {
   try {
-    yield call(axios.put, `/api/admin/${action.payload}`, {
-      status: "denied",
+    const { status, hostId } = action.payload;
+    yield call(axios.put, `/api/admin/${hostId}`, {
+      status,
     });
     yield put({ type: "FETCH_REQUESTS" });
   } catch (error) {

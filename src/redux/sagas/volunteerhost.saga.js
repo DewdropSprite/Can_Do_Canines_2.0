@@ -4,7 +4,8 @@ import {put, takeLatest} from 'redux-saga/effects';
 function* volunteerToHost(action){
     try{
         const { requestId, formData } = action.payload
-
+        
+        console.log("Action payload in saga:", action.payload);
         console.log("hostId:", formData)
 
         const response = yield axios.post(`api/sitter/volunteer/${requestId}`, formData)
