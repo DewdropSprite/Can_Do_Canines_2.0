@@ -39,7 +39,7 @@ router.get("/", (req, res) => {
     })
     .catch((error) => {
       console.error("Error fetching all dog hosting requests", error);
-      res.sendStatus(500); // Send a server error status code
+      res.sendStatus(500);
     });
 });
 

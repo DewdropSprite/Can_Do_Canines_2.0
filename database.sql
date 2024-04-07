@@ -148,14 +148,11 @@ CREATE TABLE IF NOT EXISTS "dogs" (
 CREATE TABLE IF NOT EXISTS "hosting_request" (
     "id" SERIAL PRIMARY KEY,
     "dog_id" INT NOT NULL,
-    "user_id" INT NOT NULL,
     "start_date" DATE NOT NULL,
     "end_date" DATE NOT NULL,
     "date_comments" VARCHAR(255) NOT NULL,
     "appointments" VARCHAR(255) NOT NULL,
-    "status" VARCHAR(50),
-    FOREIGN KEY ("dog_id") REFERENCES "dogs"("id") ON DELETE CASCADE,
-    FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE
+    FOREIGN KEY ("dog_id") REFERENCES "dogs"("id") ON DELETE CASCADE
 );
 
 --VOLUNTEER_HOSTING ----------------------
@@ -166,14 +163,25 @@ CREATE TABLE IF NOT EXISTS "volunteer_hosting" (
     "start_date" DATE NOT NULL,
     "end_date" DATE NOT NULL,
     "comments" VARCHAR(500),
-    "status" BOOLEAN,
     FOREIGN KEY ("request_id") REFERENCES "hosting_request"("id")ON DELETE CASCADE,
     FOREIGN KEY ("user_id") REFERENCES "user"("id")ON DELETE CASCADE
 );
 
+-- HOST_STATUS ----------------------------
+CREATE TABLE IF NOT EXISTS "host_status" (
+"id" SERIAL PRIMARY KEY NOT NULL,
+"volunteer_request_id" INT NOT NULL,
+"status" BOOLEAN,
+FOREIGN KEY ("volunteer_request_id") REFERENCES "volunteer_hosting"("id") ON DELETE CASCADE);
+
+
+------- PHOTO -------
 CREATE TABLE IF NOT EXISTS "photo" (
 "id" SERIAL PRIMARY KEY,
 "dog_id" INT NOT NULL,
 "photo" VARCHAR(500),
 FOREIGN KEY ("dog_id") REFERENCES "dogs"("id") ON DELETE CASCADE);
+
+-- MAKE SURE TO ALSO RUN THIS QUERY - IT MAKES IT SO ONLY 1 PHOTO CAN BE IN THE DB TABLE PER DOG -----
+ALTER TABLE "photo" ADD UNIQUE ("dog_id");
 
