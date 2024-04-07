@@ -14,21 +14,26 @@ router.get("/", (req, res) => {
         "hosting_request"."appointments",
         "dogs"."dog_name" AS "dog_name",
         "user"."name" AS "user_name",
-        "photo"."photo" AS "photo"     
+        "photo"."photo" AS "photo",
+        "host_status"."status" AS "confirmation_status"    
         FROM
         "hosting_request"
       JOIN
         "dogs" ON "hosting_request"."dog_id" = "dogs"."id"
       JOIN
-      "user" ON "dogs"."user_id" = "user"."id"
-        LEFT JOIN LATERAL (
+        "user" ON "dogs"."user_id" = "user"."id"
+      LEFT JOIN LATERAL (
           SELECT "photo"."photo" FROM "photo" WHERE "photo"."dog_id" = "dogs"."id"
           ORDER BY "photo"."id" DESC
-          LIMIT 1) "photo" ON true;
+          LIMIT 1) "photo" ON true
+      LEFT JOIN
+        "host_status" ON "hosting_request"."id" = "host_status"."volunteer_request_id"
+        WHERE
+        "host_status"."status" IS NULL OR "host_status"."status" = false;
     `;
 
   pool
-    .query(sqlText, )
+    .query(sqlText)
     .then((result) => {
       res.send(result.rows);
     })

@@ -53,7 +53,8 @@ const AdminHome = () => {
           onChange={handleFilterChange}
         >
           <ToggleButton value="pending">Pending</ToggleButton>
-          <ToggleButton value="confirmed">Confirmed/Denied</ToggleButton>
+          <ToggleButton value="confirmed">Confirmed</ToggleButton>
+          <ToggleButton value="denied">Denied</ToggleButton>
         </ToggleButtonGroup>
       </Box>
       <TableContainer component={Paper} sx={{ my: 4 }}>
