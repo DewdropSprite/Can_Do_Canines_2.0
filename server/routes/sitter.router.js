@@ -192,7 +192,7 @@ router.post("/request/:id", async (req, res) => {
 
  
 
-  const { start_date, end_date, date_comments, appointments, status } =
+  const { start_date, end_date, date_comments, appointments } =
     req.body;
   console.log("req.body", req.body);
 
@@ -204,23 +204,19 @@ router.post("/request/:id", async (req, res) => {
     const query = `
       INSERT INTO "hosting_request" 
       ( "dog_id",
-        "user_id",
         "start_date",
         "end_date",
         "date_comments",
-        "appointments",
-        "status"
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        "appointments"
+      ) VALUES ($1, $2, $3, $4, $5)
       RETURNING "id";`;
 
     const values = [
       dogId,
-      userId,
       start_date,
       end_date,
       date_comments,
-      appointments,
-      status,
+      appointments
     ];
     const requestResult = await connection.query(query, values);
 console.log("request result", requestResult)
@@ -312,45 +308,51 @@ router.post("/volunteer/:id", async (req, res) => {
     return res.sendStatus(403);
   }
 
-  const userId = req.user.id;
-  const requestId = req.params.id;
-  console.log("requestId server side", requestId);
-
-  const { start_date, end_date, comments } = req.body;
-  console.log("req.body", req.body);
-
   let connection;
 
   try {
+    const requestId = req.params.id;
+    const userId = req.user.id;
+
+    console.log("requestId server side", requestId);
+
+    const { start_date, end_date, comments, status} = req.body;
+    console.log("req.body", req.body);
+
+    const volunteerRequest = [requestId, userId, start_date, end_date, comments];
+    console.log("volunteerRequest:", volunteerRequest);
+
     connection = await pool.connect();
+    await connection.query("BEGIN;");
 
-    const query = `
-    INSERT INTO "volunteer_hosting" (
-      "request_id",
-      "user_id",
-      "start_date",
-      "end_date",
-      "comments",
-      "status"
-    ) VALUES ($1, $2, $3, $4, $5, false)
-    RETURNING "id";`
+    const volunteerRequestQuery = `
+      INSERT INTO "volunteer_hosting" (
+        "request_id",
+        "user_id",
+        "start_date",
+        "end_date",
+        "comments"
+      ) VALUES ($1, $2, $3, $4, $5)
+      RETURNING "id";`;
 
-    const values = [
-      requestId,
-      userId,
-      start_date,
-      end_date,
-      comments
-    ];
+    const volunteerRequestResult = await connection.query(volunteerRequestQuery, volunteerRequest);
+    const createVolunteerRequestId = volunteerRequestResult.rows[0].id;
 
-    const result = await connection.query(query, values);
+    const hostStatusQuery = `
+      INSERT INTO "host_status" (
+        "volunteer_request_id",
+        "status"
+      ) VALUES ($1, $2);`;
 
-    const hostId = result.rows[0].id;
-    console.log("volunteer request created hostId:", hostId);
+    await connection.query(hostStatusQuery, [createVolunteerRequestId, status]);
 
-    res.status(201).json({ hostId });
+    await connection.query("COMMIT;");
+    res.status(201).json({ volunteerRequestId: createVolunteerRequestId });
   } catch (error) {
-    console.error("error requesting sitter", error);
+    console.log("error", error);
+    if (connection) {
+      await connection.query("ROLLBACK;");
+    }
     res.sendStatus(500);
   } finally {
     if (connection) {
@@ -358,7 +360,7 @@ router.post("/volunteer/:id", async (req, res) => {
     }
   }
 });
-
+  
 /**
  * GET route to view a submitted request a volunteer sends for single dog hosting experience (POST sitter/volunteer/:id)
  *  the :id here is the hostingId of the corresponding request (volunteer_hosting)

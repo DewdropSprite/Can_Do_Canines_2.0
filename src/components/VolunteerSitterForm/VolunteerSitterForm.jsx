@@ -19,30 +19,24 @@ import MenuIcon from "@mui/icons-material/Menu";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 const VolunteerSitterForm = (minStartDate, maxEndDate) => {
-  const { startDate } = useParams();
-  const { endDate } = useParams();
-  const minDate = format(new Date(startDate), 'yyyy-MM-dd');
-  const maxDate = format(new Date(endDate), 'yyyy-MM-dd');
-
   let dispatch = useDispatch("");
   let history = useHistory("");
   const { requestId } = useParams();
+  const { startDate } = useParams();
+  const { endDate } = useParams();
+
+  const minDate = format(new Date(startDate), 'yyyy-MM-dd');
+  const maxDate = format(new Date(endDate), 'yyyy-MM-dd');
+
+
   console.log('date', minDate, maxDate )
   
-  // const requestHost = useSelector((state) => state.requestHost)
-  // useEffect(() => {
-  //   if (requestId) {
-  //     dispatch({ type: "REQUEST_HOST", payload: { start_date, end_date } });
-  //   }
-  // }, [requestId]);
-
-  let [formData, setFormData] = useState({
-    start_date: "",
-    end_date: "",
-    comments: "",
-  });
-
-
+  
+  const [formData, setFormData] = useState({
+    start_date: minDate,
+    end_date: maxDate,
+    comments: "", 
+});
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -51,11 +45,17 @@ const VolunteerSitterForm = (minStartDate, maxEndDate) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log("dispatching VOLUNTEER_TO_HOST action");
 
+    console.log("dispatching VOLUNTEER_TO_HOST action");
+    console.log("Submitting with requestId:", requestId);
+    console.log("Form Data:", formData);
+    
     dispatch({
       type: "VOLUNTEER_TO_HOST",
-      payload: { requestId, formData },
+      payload: { 
+        requestId, 
+        formData
+       },
     });
     history.push("/home");
   };
@@ -97,10 +97,8 @@ if (value === "delete"){
       <Typography variant="h4" align="center" sx={{ my: 2 }}>
         Volunteer to Host
       </Typography>
+      <form noValidate autoComplete="off" onSubmit = {handleSubmit}>
       <Box
-        component="form"
-        noValidate
-        autoComplete="off"
         sx={{
           mt: 3,
           display: "flex",
@@ -120,7 +118,6 @@ if (value === "delete"){
             min: minDate,
             max: maxDate
           }}
-            // max: maxDate, 
           
         />
         <TextField
@@ -205,16 +202,18 @@ if (value === "delete"){
                 Go Back
               </Button>
               <Button
+              type="submit"
                 variant="contained"
                 color="primary"
-                onClick={handleSubmit}
                 sx={{ width: "48%" }}
               >
                 Submit
               </Button>
             </Box>
           </Box>
+          </form>
     </Container>
+
   );
 };
 

@@ -119,7 +119,7 @@ function App() {
               </ProtectedRoute>
 
               {isAdmin === true &&
-                <ProtectedRoute exact path="/adminHome">
+                <ProtectedRoute exact path="/admin">
                   <AdminHome />
                 </ProtectedRoute>
               }

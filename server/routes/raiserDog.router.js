@@ -181,7 +181,6 @@ JOIN
 
 
 //Update Dog Router
-
 router.put('/:id', (req, res) => {
   console.log('in dog UPDATE route')
   console.log('req.body', req.user.id, req.body, req.params.id)
