@@ -9,6 +9,7 @@ import requestHostSaga from './requesthost.saga';
 import volunteerHostSaga from './volunteerhost.saga';
 import requestsSaga from './admin.saga';
 import mailSaga from './mail.saga';
+import hostingSaga from './hosting.saga';
 
 // rootSaga is the primary saga.
 // It bundles up all of the other sagas so our project can use them.
@@ -28,7 +29,7 @@ export default function* rootSaga() {
     requestHostSaga(),
     volunteerHostSaga(),
     requestsSaga(),
-    mailSaga()
-
+    mailSaga(),
+    hostingSaga(),
   ]);
 }
