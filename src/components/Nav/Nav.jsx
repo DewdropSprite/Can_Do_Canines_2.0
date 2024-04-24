@@ -41,7 +41,7 @@ function Nav() {
     
     { text: "Home", path: "/home" },
     { text: "Hosting Opportunities", path: "/data-grid" },
-    { text: "Edit Profile", path: "/user-edit" },
+    { text: "Edit User Profile", path: "/user-edit" },
     { text: "Info", path: "/info" },
     { text: "About", path: "/about" },
   ];
@@ -80,6 +80,15 @@ function Nav() {
                 sx={{ fontSize: "1.0rem" }}
               >
                 Hosting Opportunities
+              </Button>
+
+              <Button
+                color="inherit"
+                component={NavLink}
+                to="/home"
+                sx={{ fontSize: "1.0rem" }}
+              >
+                Home
               </Button>
 
               

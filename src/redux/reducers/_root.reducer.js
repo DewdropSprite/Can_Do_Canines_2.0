@@ -7,6 +7,7 @@ import deleteDogProfile from "./deletedog.reducer";
 import requestHost from "./requesthost.reducer";
 import raiserDogReducer from "./raiserDog.reducer";
 import volunteerHost from './volunteerhost.reducer';
+import hostingReducer from "./hosting.reducer";
 
 import adminReducer from "./admin.reducer";
 
@@ -27,6 +28,7 @@ const rootReducer = combineReducers({
   raiserDogReducer,
   volunteerHost,
   adminReducer,
+  hostingReducer
 });
 
 export default rootReducer;
